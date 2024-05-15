@@ -9,6 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let width, height;
     let isMouseDown = false;
     let fireX = -1, fireY = -1;
+    let shakeDuration = 0;
+    const maxShakeDuration = 20;
 
     const materials = {
         'sand': { color: '#f4e542', density: 2 },
@@ -18,7 +20,9 @@ document.addEventListener('DOMContentLoaded', () => {
         'burning_wood': { color: '#A52A2A', density: 3, burnTime: 10000, spreadTime: 2000, burnStart: null },
         'dirt': { color: '#654321', density: 2 },
         'fire': { color: '#ff4500', density: 0 },
-        'steam': { color: '#c0c0c0', density: 0 }
+        'steam': { color: '#c0c0c0', density: 0 },
+        'glass': { color: '#e0e0e0', density: 4 },
+        'gunpowder': { color: '#4f4f4f', density: 2 }
     };
 
     let selectedMaterial = 'sand';
@@ -36,6 +40,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function draw() {
+        if (shakeDuration > 0) {
+            const dx = Math.random() * 5 - 2.5;
+            const dy = Math.random() * 5 - 2.5;
+            ctx.setTransform(1, 0, 0, 1, dx, dy);
+            shakeDuration--;
+        } else {
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+        }
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         for (let x = 0; x < width; x++) {
             for (let y = 0; y < height; y++) {
@@ -61,12 +74,33 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
+    function explode(x, y) {
+        const radius = 3;
+        for (let i = -radius; i <= radius; i++) {
+            for (let j = -radius; j <= radius; j++) {
+                const dist = Math.sqrt(i * i + j * j);
+                if (dist <= radius) {
+                    const newX = x + i;
+                    const newY = y + j;
+                    if (newX >= 0 && newX < width && newY >= 0 && newY < height) {
+                        if (grid[newX][newY].type === 'gunpowder') {
+                            grid[newX][newY] = { type: 'exploded', color: null }; // Mark as exploded
+                            explode(newX, newY);
+                        }
+                        grid[newX][newY] = { type: 'empty', color: null };
+                    }
+                }
+            }
+        }
+        shakeDuration = maxShakeDuration;
+    }
+
     function update() {
         const now = Date.now();
         for (let x = 0; x < width; x++) {
             for (let y = height - 1; y >= 0; y--) {
-                if (grid[x][y].type === 'sand') {
-                    // Sand physics
+                if (grid[x][y].type === 'sand' || grid[x][y].type === 'gunpowder') {
+                    // Sand and gunpowder physics
                     if (y < height - 1 && grid[x][y + 1].type === 'empty') {
                         grid[x][y + 1] = grid[x][y];
                         grid[x][y] = { type: 'empty', color: null };
@@ -99,6 +133,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     if (x < width - 1 && grid[x + 1][y].type === 'water') {
                         grid[x + 1][y] = { type: 'steam', color: materials['steam'].color };
+                    }
+                    if (y > 0 && grid[x][y - 1].type === 'sand') {
+                        grid[x][y - 1] = { type: 'glass', color: materials['glass'].color };
+                    }
+                    if (y < height - 1 && grid[x][y + 1].type === 'sand') {
+                        grid[x][y + 1] = { type: 'glass', color: materials['glass'].color };
+                    }
+                    if (x > 0 && grid[x - 1][y].type === 'sand') {
+                        grid[x - 1][y] = { type: 'glass', color: materials['glass'].color };
+                    }
+                    if (x < width - 1 && grid[x + 1][y].type === 'sand') {
+                        grid[x + 1][y] = { type: 'glass', color: materials['glass'].color };
+                    }
+                    if (y > 0 && grid[x][y - 1].type === 'gunpowder') {
+                        explode(x, y - 1);
+                    }
+                    if (y < height - 1 && grid[x][y + 1].type === 'gunpowder') {
+                        explode(x, y + 1);
+                    }
+                    if (x > 0 && grid[x - 1][y].type === 'gunpowder') {
+                        explode(x - 1, y);
+                    }
+                    if (x < width - 1 && grid[x + 1][y].type === 'gunpowder') {
+                        explode(x + 1, y);
                     }
                 } else if (grid[x][y].type === 'wood') {
                     // Wood to burning wood
@@ -169,6 +227,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     fireY = -1;
                 } else if (grid[fireX][fireY].type === 'wood') {
                     grid[fireX][fireY] = { type: 'burning_wood', color: materials['burning_wood'].color, burnStart: Date.now() };
+                } else if (grid[fireX][fireY].type === 'sand') {
+                    grid[fireX][fireY] = { type: 'glass', color: materials['glass'].color };
+                } else if (grid[fireX][fireY].type === 'gunpowder') {
+                    explode(fireX, fireY);
+                    fireX = -1;
+                    fireY = -1;
                 }
 
                 draw();
