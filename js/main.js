@@ -141,22 +141,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const isExpanded = content.classList.contains('expanded');
 
             if (isExpanded) {
-                const startHeight = content.scrollHeight;
-                content.style.height = startHeight + 'px';
-                requestAnimationFrame(() => {
-                    content.style.height = '0';
-                });
+                content.style.display = 'none';
                 content.classList.remove('expanded');
             } else {
-                const startHeight = content.scrollHeight;
-                content.style.height = '0';
-                requestAnimationFrame(() => {
-                    content.style.height = startHeight + 'px';
-                });
+                content.style.display = 'flex';
                 content.classList.add('expanded');
-                content.addEventListener('transitionend', () => {
-                    content.style.height = 'auto';
-                }, { once: true });
             }
 
             category.classList.toggle('selected', !isExpanded);
