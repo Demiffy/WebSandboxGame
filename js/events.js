@@ -11,17 +11,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     canvas.addEventListener('mousemove', (event) => {
-        const pos = getMousePos(canvas, event);
-        const x = Math.floor(pos.x / state.gridSize) * state.gridSize;
-        const y = Math.floor(pos.y / state.gridSize) * state.gridSize;
+        const rect = canvas.getBoundingClientRect();
+        const x = Math.floor((event.clientX - rect.left) / state.gridSize) * state.gridSize;
+        const y = Math.floor((event.clientY - rect.top) / state.gridSize) * state.gridSize;
         cursorHighlight.style.left = (x + 60) + 'px'; // Adjust for menu width
         cursorHighlight.style.top = y + 'px';
 
-        state.lastMouseX = pos.x;
-        state.lastMouseY = pos.y;
+        state.lastMouseX = event.clientX - rect.left;
+        state.lastMouseY = event.clientY - rect.top;
 
-        const gridX = Math.floor(pos.x / state.gridSize);
-        const gridY = Math.floor(pos.y / state.gridSize);
+        const gridX = Math.floor(state.lastMouseX / state.gridSize);
+        const gridY = Math.floor(state.lastMouseY / state.gridSize);
         if (gridX >= 0 && gridX < state.width && gridY >= 0 && gridY < state.height) {
             updateInfoPanel(state, gridX, gridY);
         }
@@ -63,9 +63,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     canvas.addEventListener('mousedown', (event) => {
         state.isMouseDown = true;
-        const pos = getMousePos(canvas, event);
-        const x = Math.floor(pos.x / state.gridSize);
-        const y = Math.floor(pos.y / state.gridSize);
+        const rect = canvas.getBoundingClientRect();
+        const x = Math.floor((event.clientX - rect.left) / state.gridSize);
+        const y = Math.floor((event.clientY - rect.top) / state.gridSize);
         if (x >= 0 && x < state.width && y >= 0 && y < state.height) {
             if (state.selectedMaterial === 'remover') {
                 state.grid[x][y] = { type: 'empty', color: null, heat: 0, pressure: -1 };

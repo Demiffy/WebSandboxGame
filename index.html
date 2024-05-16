@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Full Screen Sandbox Game</title>
+    <title>SandBoxied</title>
+    <link rel="icon" href="favi.png" type="image/x-icon">
     <style>
         body, html {
             margin: 0;
@@ -32,11 +33,13 @@
             align-items: center;
             padding: 10px 0;
             box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
+            overflow-y: auto;
+            scrollbar-width: thin;
         }
-        .menu-item {
+        .menu-item, .menu-category {
             width: 40px;
             height: 40px;
-            margin: 15px 0;
+            margin: 10px 0;
             cursor: pointer;
             border-radius: 5px;
             transition: transform 0.2s, box-shadow 0.2s;
@@ -44,13 +47,31 @@
             align-items: center;
             justify-content: center;
         }
-        .menu-item:hover, .menu-item.selected {
+        .menu-item:hover, .menu-item.selected, .menu-category:hover, .menu-category.selected {
             transform: scale(1.1);
             box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
         }
-        .menu-item img {
+        .menu-item img, .menu-category img {
             width: 24px;
             height: 24px;
+        }
+        .menu-category-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 0;
+            overflow: hidden;
+            transition: height 0.3s ease-out;
+        }
+        .menu-category-content.expanded {
+            height: auto; /* Initially set height to auto for JS calculation */
+            transition: height 0.3s ease-in;
+        }
+        .menu-category {
+            background-color: #444;
+        }
+        .menu-item {
+            background-color: #555;
         }
         #selected-element {
             position: absolute;
@@ -60,6 +81,7 @@
             background-color: rgba(0, 0, 0, 0.5);
             padding: 5px 10px;
             border-radius: 5px;
+            z-index: 1;
         }
         #info-panel {
             position: absolute;
@@ -71,6 +93,7 @@
             font-size: 16px;
             display: flex;
             flex-direction: column;
+            z-index: 1;
         }
         #cursor-highlight {
             position: absolute;
@@ -79,6 +102,21 @@
             border: 1px solid #fff;
             pointer-events: none;
         }
+        #heatmap-checkbox-container {
+            position: absolute;
+            bottom: 100px;
+            left: 70px;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            z-index: 1;    
+        }
+        #heatmap-checkbox-container label {
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
@@ -86,11 +124,38 @@
         <div id="sand" class="menu-item selected" style="background-color: #f4e542;">
             <img src="sandicon.png" alt="Sand">
         </div>
-        <div id="water" class="menu-item" style="background-color: #00bfff;">
-            <img src="watericon.png" alt="Water">
-        </div>
-        <div id="stone" class="menu-item" style="background-color: #8c8c89;">
+        <div class="menu-category" id="stone-category">
             <img src="stoneicon.png" alt="Stone">
+        </div>
+        <div class="menu-category-content" id="stone-category-content">
+            <div id="stone" class="menu-item" style="background-color: #8c8c89;">
+                <img src="stoneicon.png" alt="Stone">
+            </div>
+            <!-- Add more stone-like materials here -->
+        </div>
+        <div class="menu-category" id="metal-category">
+            <img src="metalicon.png" alt="Metal">
+        </div>
+        <div class="menu-category-content" id="metal-category-content">
+            <div id="iron" class="menu-item" style="background-color: #B0C4DE;">
+                <img src="ironicon.png" alt="Iron">
+            </div>
+            <div id="copper" class="menu-item" style="background-color: #B87333;">
+                <img src="coppericon.png" alt="Copper">
+            </div>
+            <!-- Add more metal materials here -->
+        </div>
+        <div class="menu-category" id="fire-water-category">
+            <img src="firewatericon.png" alt="Fire and Water">
+        </div>
+        <div class="menu-category-content" id="fire-water-category-content">
+            <div id="fire" class="menu-item" style="background-color: #ff4500;">
+                <img src="fireicon.png" alt="Fire">
+            </div>
+            <div id="water" class="menu-item" style="background-color: #00bfff;">
+                <img src="watericon.png" alt="Water">
+            </div>
+            <!-- Add more fire and water materials here -->
         </div>
         <div id="wood" class="menu-item" style="background-color: #8B4513;">
             <img src="woodicon.png" alt="Wood">
@@ -103,9 +168,6 @@
         </div>
         <div id="gunpowder" class="menu-item" style="background-color: #4f4f4f;">
             <img src="gunpowdericon.png" alt="Gunpowder">
-        </div>
-        <div id="fire" class="menu-item" style="background-color: #ff4500;">
-            <img src="fireicon.png" alt="Fire">
         </div>
         <div id="remover" class="menu-item" style="background-color: #ff4d4d;">
             <img src="removericon.png" alt="Remover">
@@ -122,6 +184,10 @@
         <div id="block-type">Type: None</div>
         <div id="block-heat">Heat: 0</div>
         <div id="block-pressure">Pressure: 0</div>
+    </div>
+    <div id="heatmap-checkbox-container">
+        <input type="checkbox" id="heatmap-checkbox">
+        <label for="heatmap-checkbox">Show Heat Map</label>
     </div>
     <canvas id="sandbox"></canvas>
     <div id="cursor-highlight"></div>

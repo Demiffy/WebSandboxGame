@@ -109,10 +109,16 @@ function update(ctx, canvas, state) {
     draw(ctx, canvas, state);
 
     const rect = canvas.getBoundingClientRect();
-    const gridX = Math.floor((state.lastMouseX - rect.left) / state.gridSize);
-    const gridY = Math.floor((state.lastMouseY - rect.top) / state.gridSize);
+    const gridX = Math.floor(state.lastMouseX / state.gridSize);
+    const gridY = Math.floor(state.lastMouseY / state.gridSize);
     if (gridX >= 0 && gridX < state.width && gridY >= 0 && gridY < state.height) {
         updateInfoPanel(state, gridX, gridY);
+    }
+
+    // Draw heat map if the checkbox is checked
+    const heatmapCheckbox = document.getElementById('heatmap-checkbox');
+    if (heatmapCheckbox.checked) {
+        drawHeatMap(ctx, state);
     }
 
     requestAnimationFrame(() => update(ctx, canvas, state));
@@ -123,4 +129,47 @@ document.addEventListener('DOMContentLoaded', () => {
     const ctx = canvas.getContext('2d');
 
     update(ctx, canvas, state);
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const categories = document.querySelectorAll('.menu-category');
+
+    categories.forEach(category => {
+        category.addEventListener('click', () => {
+            const categoryId = category.id + '-content';
+            const content = document.getElementById(categoryId);
+            const isExpanded = content.classList.contains('expanded');
+
+            if (isExpanded) {
+                const startHeight = content.scrollHeight;
+                content.style.height = startHeight + 'px';
+                requestAnimationFrame(() => {
+                    content.style.height = '0';
+                });
+                content.classList.remove('expanded');
+            } else {
+                const startHeight = content.scrollHeight;
+                content.style.height = '0';
+                requestAnimationFrame(() => {
+                    content.style.height = startHeight + 'px';
+                });
+                content.classList.add('expanded');
+                content.addEventListener('transitionend', () => {
+                    content.style.height = 'auto';
+                }, { once: true });
+            }
+
+            category.classList.toggle('selected', !isExpanded);
+        });
+    });
+
+    const menuItems = document.querySelectorAll('.menu-item');
+    menuItems.forEach(item => {
+        item.addEventListener('click', () => {
+            document.querySelectorAll('.menu-item').forEach(mi => mi.classList.remove('selected'));
+            item.classList.add('selected');
+            selectedMaterial = item.id;
+            document.getElementById('selected-element').innerText = `Selected: ${item.id.charAt(0).toUpperCase() + item.id.slice(1)}`;
+        });
+    });
 });

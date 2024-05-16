@@ -64,19 +64,33 @@ function initGrid(grid, width, height) {
 
 function spreadHeat(state, x, y) {
     if (state.grid[x][y].heat > 0) {
-        if (x > 0 && state.grid[x - 1][y].heat < state.grid[x][y].heat) {
-            state.grid[x - 1][y].heat = state.grid[x][y].heat - 1;
+        let dissipationRate = 0.1;
+        const neighbors = [
+            { dx: -1, dy: 0 },
+            { dx: 1, dy: 0 },
+            { dx: 0, dy: -1 },
+            { dx: 0, dy: 1 }
+        ];
+
+        // Increase dissipation rate significantly in low pressure areas
+        if (state.grid[x][y].pressure <= 0) {
+            dissipationRate = 5.0;
         }
-        if (x < state.width - 1 && state.grid[x + 1][y].heat < state.grid[x][y].heat) {
-            state.grid[x + 1][y].heat = state.grid[x][y].heat - 1;
+
+        for (const { dx, dy } of neighbors) {
+            const nx = x + dx;
+            const ny = y + dy;
+            if (nx >= 0 && nx < state.width && ny >= 0 && ny < state.height) {
+                const neighbor = state.grid[nx][ny];
+                if (neighbor.type !== 'stone' && neighbor.type !== 'copper' && neighbor.type !== 'iron') { // Prevent heat from passing through stone, copper, and iron
+                    if (neighbor.heat < state.grid[x][y].heat) {
+                        neighbor.heat = state.grid[x][y].heat - 1;
+                    }
+                }
+            }
         }
-        if (y > 0 && state.grid[x][y - 1].heat < state.grid[x][y].heat) {
-            state.grid[x][y - 1].heat = state.grid[x][y].heat - 1;
-        }
-        if (y < state.height - 1 && state.grid[x][y + 1].heat < state.grid[x][y].heat) {
-            state.grid[x][y + 1].heat = state.grid[x][y].heat - 1;
-        }
-        state.grid[x][y].heat -= 0.1; // Heat dissipates over time
+
+        state.grid[x][y].heat -= dissipationRate; // Heat dissipates faster in low pressure
         if (state.grid[x][y].heat < 0) {
             state.grid[x][y].heat = 0;
         }
@@ -117,4 +131,22 @@ function getMousePos(canvas, evt) {
         x: evt.clientX - rect.left,
         y: evt.clientY - rect.top
     };
+}
+
+function drawHeatMap(ctx, state) {
+    const maxHeat = 100; // Adjust this value based on the expected heat range in your simulation
+    ctx.save();
+    ctx.globalAlpha = 0.6; // Adjust transparency as needed
+
+    for (let x = 0; x < state.width; x++) {
+        for (let y = 0; y < state.height; y++) {
+            const heat = state.grid[x][y].heat;
+            if (heat > 0) {
+                const intensity = Math.min(255, Math.floor((heat / maxHeat) * 255));
+                ctx.fillStyle = `rgb(${intensity}, 0, 0)`; // Red color based on heat intensity
+                ctx.fillRect(x * state.gridSize, y * state.gridSize, state.gridSize, state.gridSize);
+            }
+        }
+    }
+    ctx.restore();
 }
