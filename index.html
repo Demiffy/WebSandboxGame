@@ -61,6 +61,17 @@
             padding: 5px 10px;
             border-radius: 5px;
         }
+        #info-panel {
+            position: absolute;
+            bottom: 10px;
+            left: 70px;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 16px;
+            display: flex;
+            flex-direction: column;
+        }
         #cursor-highlight {
             position: absolute;
             width: 10px;
@@ -99,10 +110,25 @@
         <div id="remover" class="menu-item" style="background-color: #ff4d4d;">
             <img src="removericon.png" alt="Remover">
         </div>
+        <div id="heat" class="menu-item" style="background-color: #ff0000;">
+            <img src="heaticon.png" alt="Heat">
+        </div>
+        <div id="pressure" class="menu-item" style="background-color: #0000ff;">
+            <img src="pressureicon.png" alt="Pressure">
+        </div>
     </div>
     <div id="selected-element">Selected: Sand</div>
+    <div id="info-panel">
+        <div id="block-type">Type: None</div>
+        <div id="block-heat">Heat: 0</div>
+        <div id="block-pressure">Pressure: 0</div>
+    </div>
     <canvas id="sandbox"></canvas>
     <div id="cursor-highlight"></div>
-    <script src="game.js"></script>
+    <script src="js/materials.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/events.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>
