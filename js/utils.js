@@ -63,8 +63,8 @@ function initGrid(grid, width, height) {
 }
 
 function spreadHeat(state, x, y) {
-    if (state.grid[x][y].heat > 0) {
-        let dissipationRate = 0.1;
+    const currentBlock = state.grid[x][y];
+    if (currentBlock.heat > 0) {
         const neighbors = [
             { dx: -1, dy: 0 },
             { dx: 1, dy: 0 },
@@ -72,27 +72,46 @@ function spreadHeat(state, x, y) {
             { dx: 0, dy: 1 }
         ];
 
-        // Increase dissipation rate significantly in low pressure areas
-        if (state.grid[x][y].pressure <= 0) {
-            dissipationRate = 5.0;
-        }
-
         for (const { dx, dy } of neighbors) {
             const nx = x + dx;
             const ny = y + dy;
             if (nx >= 0 && nx < state.width && ny >= 0 && ny < state.height) {
                 const neighbor = state.grid[nx][ny];
-                if (neighbor.type !== 'stone' && neighbor.type !== 'copper' && neighbor.type !== 'iron') { // Prevent heat from passing through stone, copper, and iron
-                    if (neighbor.heat < state.grid[x][y].heat) {
-                        neighbor.heat = state.grid[x][y].heat - 1;
+                const conductivity = materials[currentBlock.type].heatConductivity;
+                const deltaHeat = (currentBlock.heat - neighbor.heat) * conductivity;
+
+                if (currentBlock.type === 'iron') {
+                    // Iron blocks only absorb heat, do not transfer it out
+                    if (neighbor.type !== 'iron') {
+                        continue;
                     }
+                } else if (neighbor.type === 'iron') {
+                    // Transfer heat into iron blocks
+                    neighbor.heat += deltaHeat;
+                    currentBlock.heat -= deltaHeat;
+                } else if (Math.abs(deltaHeat) > 0.01) {
+                    neighbor.heat += deltaHeat;
+                    currentBlock.heat -= deltaHeat;
                 }
             }
         }
 
-        state.grid[x][y].heat -= dissipationRate; // Heat dissipates faster in low pressure
-        if (state.grid[x][y].heat < 0) {
-            state.grid[x][y].heat = 0;
+        // Adjust dissipation rate based on pressure
+        let dissipationRate = 0.01; // Base dissipation rate
+        if (currentBlock.pressure < 0) {
+            dissipationRate = 0.1; // Higher dissipation rate for low pressure
+        } else {
+            dissipationRate /= (1 + currentBlock.pressure); // Lower dissipation rate for higher pressure
+        }
+
+        currentBlock.heat -= dissipationRate;
+        if (currentBlock.heat < 0) {
+            currentBlock.heat = 0;
+        }
+
+        // Check for melting
+        if (materials[currentBlock.type].meltingPoint && currentBlock.heat >= materials[currentBlock.type].meltingPoint) {
+            state.grid[x][y] = { type: 'empty', color: null, heat: 0, pressure: -1 }; // Melting the block
         }
     }
 }
@@ -141,7 +160,7 @@ function drawHeatMap(ctx, state) {
     for (let x = 0; x < state.width; x++) {
         for (let y = 0; y < state.height; y++) {
             const heat = state.grid[x][y].heat;
-            if (heat > 0) {
+            if (heat > 0) { // Only visualize significant heat levels
                 const intensity = Math.min(255, Math.floor((heat / maxHeat) * 255));
                 ctx.fillStyle = `rgb(${intensity}, 0, 0)`; // Red color based on heat intensity
                 ctx.fillRect(x * state.gridSize, y * state.gridSize, state.gridSize, state.gridSize);
