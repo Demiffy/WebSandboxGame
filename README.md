@@ -25,7 +25,6 @@ SandBoxied is a small project created for fun. It simulates a sandbox where user
 1. Clone the repository:
     ```bash
     git clone https://github.com/Demiffy/WebSandboxGame.git
-    cd SandBoxied
     ```
 
 2. Open the `index.html` file in your web browser to start the simulation.
