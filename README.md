@@ -24,7 +24,7 @@ SandBoxied is a small project created for fun. It simulates a sandbox where user
 
 1. Clone the repository:
     ```bash
-    git clone https://github.com/your-username/SandBoxied.git
+    git clone https://github.com/Demiffy/WebSandboxGame.git
     cd SandBoxied
     ```
 
